@@ -1,30 +1,51 @@
 import { call, put, takeLatest } from 'redux-saga/effects'
-import { history } from '../redux/store'
+import { delay } from 'redux-saga'
+import moment from 'moment'
 
-import { AUTHENTICATED, LOGOUT_REQUEST, loginSuccess, logoutSuccess } from './actions'
+import { navigate } from '../redux/actions'
+
+import {
+  AUTHENTICATED,
+  LOGOUT_REQUEST,
+  REFRESH_AUTHENTICATION,
+  loginSuccess,
+  logoutSuccess,
+  requestRenew,
+} from './actions'
+import { storeToken, logout, getExp } from './session'
 import Auth from './auth'
-import { storeToken, storeProfile, logout } from './session'
 
-function* getProfile(action) {
+function* saveTokenAndLogin({ idToken, accessToken }) {
+  yield call(storeToken, { idToken, accessToken })
+  yield put(loginSuccess(idToken, accessToken))
+  yield put(requestRenew())
+}
+
+function* renewTime() {
+  const exp = moment(getExp())
+  const time = exp.subtract(1, 'minute').milliseconds()
+  yield delay(time)
+  const payload = yield call(Auth.renew)
+  yield call(saveTokenAndLogin, payload)
+}
+
+function* setAuthentication({ payload }) {
   try {
-    const token = action.payload.token
-    yield call(storeToken, token)
-    const profile = yield call(Auth.getProfile, token)
-    yield call(storeProfile, profile)
-    yield put(loginSuccess(token, profile))
-    yield call(history.replace, '/')
+    yield call(saveTokenAndLogin, payload)
+    yield put(navigate('/pos'))
   } catch (e) {
-    console.log(e)
+    throw e
   }
 }
 
-function* singout() {
+function* signout() {
   yield call(logout)
   yield put(logoutSuccess())
-  yield call(history.replace,'/login')
+  yield put(navigate('/'))
 }
 
 export default function* authSaga() {
-  yield takeLatest(AUTHENTICATED, getProfile)
-  yield takeLatest(LOGOUT_REQUEST, singout)
+  yield takeLatest(AUTHENTICATED, setAuthentication)
+  yield takeLatest(LOGOUT_REQUEST, signout)
+  yield takeLatest(REFRESH_AUTHENTICATION, renewTime)
 }

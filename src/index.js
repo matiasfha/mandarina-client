@@ -1,10 +1,38 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import App from './App';
-import registerServiceWorker from './registerServiceWorker';
+import React from 'react'
+import ReactDOM from 'react-dom'
 import injectTapEventPlugin from 'react-tap-event-plugin'
-import './index.css';
+import { Provider } from 'react-redux'
+import { Router } from 'react-router'
+import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
+import registerServiceWorker from './registerServiceWorker'
+
+import store, { history } from './redux/store'
+import App from './App'
+import ThemeDefault from './theme-default'
+import './index.css'
 
 injectTapEventPlugin()
-ReactDOM.render(<App />, document.getElementById('root'));
-registerServiceWorker();
+
+const render = Component =>
+  ReactDOM.render(
+    <Provider store={store}>
+      <MuiThemeProvider muiTheme={ThemeDefault}>
+        <Router history={history}>
+
+          <Component />
+
+        </Router>
+      </MuiThemeProvider>
+    </Provider>,
+    document.getElementById('root')
+  )
+
+registerServiceWorker()
+
+render(App)
+
+if (module.hot && process.env.NODE_ENV === 'development') {
+  module.hot.accept()
+  const NextApp = require('./App').default
+  render(NextApp)
+}

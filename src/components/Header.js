@@ -1,17 +1,17 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
-import { push } from 'react-router-redux'
 import AppBar from 'material-ui/AppBar'
 import IconMenu from 'material-ui/IconMenu'
 import MenuItem from 'material-ui/MenuItem'
 import IconButton from 'material-ui/IconButton'
-import ViewModule from 'material-ui/svg-icons/action/view-module'
 import MoreVertIcon from 'material-ui/svg-icons/navigation/more-vert'
+import MenuIcon from 'material-ui/svg-icons/navigation/menu'
 import { white } from 'material-ui/styles/colors'
 
-
-import { requestLogot } from '../auth/actions'
-
+import { requestLogout } from '../auth/actions'
+import { navigate } from '../redux/actions'
+import menus from './menus'
 
 const style = {
   appBar: {
@@ -19,6 +19,8 @@ const style = {
     top: 0,
     overflow: 'hidden',
     maxHeight: 57,
+    paddingLeft: 0,
+    marginBottom: 40,
   },
   menuButton: {
     marginLeft: 10,
@@ -26,36 +28,11 @@ const style = {
   iconsRightContainer: {
     marginLeft: 20,
   },
+  menuItem: {
+    color: white,
+    fontSize: 14,
+  },
 }
-
-const Menu = connect()(({ dispatch }) => (
-  <IconMenu
-    color={white}
-    iconButtonElement={<IconButton><ViewModule color={white} /></IconButton>}
-    targetOrigin={{ horizontal: 'right', vertical: 'top' }}
-    anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
-    onItemTouchTap={(event, child) => {
-      let url = '/'
-      switch(child.key){
-        case 1: url = '/'; break
-        case 2: url = '/productos'; break
-        case 3: url = '/proveedores'; break
-        case 4: url = '/clientes'; break
-        case 5: url = '/ventas'; break
-        case 6: url = '/cuentas'; break
-        default: url = '/'; break
-      }
-      dispatch(push(url))
-    }}
-  >
-    <MenuItem key={1} primaryText="POS" />
-    <MenuItem key={2} primaryText="Productos" />
-    <MenuItem key={3} primaryText="Proveedores" />
-    <MenuItem key={4} primaryText="Clientes" />
-    <MenuItem key={5} primaryText="Ventas" />
-    <MenuItem key={6} primaryText="Cuentas" />
-  </IconMenu>
-))
 
 const Dots = connect()(({ dispatch }) => (
   <IconMenu
@@ -63,23 +40,50 @@ const Dots = connect()(({ dispatch }) => (
     iconButtonElement={<IconButton><MoreVertIcon color={white} /></IconButton>}
     targetOrigin={{ horizontal: 'right', vertical: 'top' }}
     anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
-    onItemTouchTap={() => dispatch(requestLogot())}
+    onItemTouchTap={() => dispatch(requestLogout())}
   >
     <MenuItem primaryText="Salir" />
   </IconMenu>
 ))
 
-
-const Header = ({ title, searchBox = false }) => (
+const Header = ({ title, dispatch }) => (
   <AppBar
+    style={style.appBar}
     title={title}
+    iconElementLeft={
+      <IconMenu
+        style={style.menuButton}
+        color={white}
+        iconButtonElement={<IconButton><MenuIcon color={white} /></IconButton>}
+        targetOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
+      >
+        {menus.map(menu => (
+          <MenuItem
+            key={menu.key}
+            style={style.menuItem}
+            primaryText={menu.text}
+            leftIcon={menu.icon}
+            onTouchTap={() => dispatch(navigate(menu.link))}
+          />
+        ))}
+      </IconMenu>
+    }
     iconElementRight={
       <div style={style.iconsRightContainer}>
-        <Menu />
         <Dots />
       </div>
     }
   />
 )
 
-export default Header
+Header.propTypes = {
+  title: PropTypes.string.isRequired,
+  dispatch: PropTypes.func.isRequired,
+}
+
+Header.defaultProps = {
+  styles: {},
+}
+
+export default connect()(Header)
